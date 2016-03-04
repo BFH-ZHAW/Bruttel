@@ -1,0 +1,35 @@
+<project>
+  <groupId>com.bruttel.spark</groupId>
+  <artifactId>FirstSpark</artifactId>
+  <modelVersion>4.0.0</modelVersion>
+  <name>example</name>
+  <packaging>jar</packaging>
+  <version>0.0.1</version>
+  <dependencies>
+  <dependency>
+  		<groupId>org.apache.spark</groupId>
+  		<artifactId>spark-core_2.10</artifactId>
+  		<version>1.6.0</version>
+  	</dependency>
+  	<dependency>
+		<groupId>org.jsoup</groupId>
+		<artifactId>jsoup</artifactId>
+		<version>1.7.2</version>
+	</dependency>
+  </dependencies>
+  <properties>
+  </properties>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+	  <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.1</version>
+          <configuration>
+          </configuration>
+	</plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>
