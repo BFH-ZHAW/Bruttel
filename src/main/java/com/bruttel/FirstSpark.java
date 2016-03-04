@@ -1,4 +1,5 @@
 package com.bruttel;
+
 /**
  * @author Bruce
  *
@@ -7,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
+
 //JSoup Framework to render text from web-pages
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,6 +16,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 // Spark Framework go run Spark
 import org.apache.commons.io.FileUtils;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -21,6 +26,7 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
+
 // For the Spark manipulations:
 import scala.Tuple2;
 
@@ -36,8 +42,12 @@ public class FirstSpark {
 		JavaSparkContext sc = new JavaSparkContext(conf);
 
 		// Delete Output Directory To prevente errors
-		FileUtils.deleteDirectory(new File(outputFile));
-
+		FileSystem hdfs = FileSystem.get(new Configuration());
+		Path newFolderPath = new Path(outputFile);
+		if (hdfs.exists(newFolderPath))		{
+			hdfs.delete(newFolderPath, true); // Delete existing Directory
+		}
+		
 		// Create text files from Wikipedia (It can be done once in a while)
 		// readList();
 
@@ -70,7 +80,8 @@ public class FirstSpark {
 		// Save the word count back out to a text file, causing evaluation.
 		counts.saveAsTextFile("hdfs://quickstart.cloudera:8020"+outputFile);
 		
-		//Was needed to properly ending the Application
+
+		// Was needed to properly ending the Application
 		sc.close();
 		System.exit(0);
 
