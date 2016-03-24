@@ -4,13 +4,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Arrays;
 
-
 //JSoup Framework to render text from web-pages
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -22,11 +20,10 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.Function2;
 import org.apache.spark.api.java.function.PairFunction;
 
-
 // For the Spark manipulations:
 import scala.Tuple2;
 
-public class FirstSpark {
+public class WordcountByKey {
 
 	public static void main(String[] args) throws Exception {
 		//String inputFile = args[0];
@@ -87,8 +84,7 @@ public class FirstSpark {
 
 		// Save the word count back out to a text file, causing evaluation.
 		//System.out.println("speichern");
-	    System.out.println(StringUtils.join(counts.collect(), ","));
-		//counts.saveAsTextFile("hdfs://quickstart.cloudera:8020"+outputFile);
+		counts.saveAsTextFile("hdfs://quickstart.cloudera:8020"+outputFile);
 		
 		//Ziel nur noch ein File speichern!
 		//Path newFilePath=new Path(newFolderPath+"/"+counts);
