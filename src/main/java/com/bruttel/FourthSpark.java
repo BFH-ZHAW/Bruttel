@@ -57,6 +57,7 @@ public class FourthSpark {
     System.out.println("In Line Versuch");
 //    System.out.print(Arrays.toString(keyedRDDinline[1]));
     System.out.print(Arrays.toString(keyedRDDinline.first()));
+    System.out.print(keyedRDDinline.first()[1]);
     
     JavaRDD<String[]> keyedRDDJava8 = csvData.flatMap(w ->  new CSVReader(new StringReader(w._2())).readAll());
     
