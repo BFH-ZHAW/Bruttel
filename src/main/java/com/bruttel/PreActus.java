@@ -24,9 +24,8 @@ public class PreActus {
 		
 		
 		// Create a Java Spark Context.
-//		SparkConf conf = new SparkConf().setMaster("local").setAppName(
-//				"FistSpark");
-//		JavaSparkContext sc = new JavaSparkContext(conf);
+		SparkConf conf = new SparkConf().setMaster("local").setAppName("PreActus");
+		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		// TODO Auto-generated method stub
 		readContracts();
@@ -53,26 +52,43 @@ public class PreActus {
 //		        System.out.println(nextLine[0] + nextLine[1] + "etc...");
 //		     }
 		
-		List<String> myList = Arrays.asList("element1","element2","element3");
-		for (String element : myList) {
-		  System.out.println (element);
-		}
+//		List<String> myList = Arrays.asList("element1","element2","element3");
+//		for (String element : myList) {
+//		  System.out.println (element);
+//		}
 		     
 		     CSVReader reader = new CSVReader(new FileReader(inputFile));
 //		     List<String[]>
+		     
 		     List<String[]> myEntries = reader.readAll();
 //		     System.out.println(myEntries.get(1));
-//		     
-		     myList.forEach(new Consumer<String>() {
-		    	   public void accept(String element) {
-		    	      System.out.println(element);
-		    	   }
-		    	});
-//		     
-		     myList.forEach((String element) -> System.out.println(element));
+		      myEntries.forEach((String[] element) -> System.out.println(Arrays.toString(element)));
+		      
+		      JavaPairRDD<String, String> csvData = sc.wholeTextFiles(inputFile);
+		      
+		      
+		      
+		      System.out.print(csvData);
+//		      JavaRDD<String[]> keyedRDD = csvData.flatMap(new ParseLine());
+//		      JavaRDD<String[]> result =
+//		        keyedRDD.filter(new Function<String[], Boolean>() {
+//		            public Boolean call(String[] input) { return input[0].equals(key); }});
+//		      System.out.println(keyedRDD.toString());
+//		      System.out.println(keyedRDD);
+//		      keyedRDD.
+		    
+		     
+//		     myList.forEach(new Consumer<String>() {
+//		    	   public void accept(String element) {
+//		    	      System.out.println(element);
+//		    	   }
+//		    	});
+////		     
+//		     myList.forEach((String element) -> System.out.println(element));
 //		     
 //		     
 		     
+		      
 		     
 		
 
