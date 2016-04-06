@@ -71,6 +71,7 @@ public class FirstSpark {
 						return Arrays.asList(x.split(" "));
 					}
 				});
+		JavaRDD<String> words2= input.flatMap(f -> Arrays.asList(f.split(" "))); 
 
 		// Transform into word and count.
 		JavaPairRDD<String, Integer> counts = words.mapToPair(
@@ -84,7 +85,9 @@ public class FirstSpark {
 				return x + y;
 			}
 		});
-
+		
+		JavaPairRDD<String, Integer> counts2 = words.mapToPair(s -> new Tuple2<String, Integer>(s, 1)).reduceByKey((x, y) -> x + y);
+		
 		// Save the word count back out to a text file, causing evaluation.
 		//System.out.println("speichern");
 	    System.out.println(StringUtils.join(counts.collect(), ","));

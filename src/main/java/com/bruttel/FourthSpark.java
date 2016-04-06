@@ -50,11 +50,12 @@ public class FourthSpark {
     JavaRDD<String[]> keyedRDDinline = csvData.flatMap(new FlatMapFunction<Tuple2<String, String>, String[]>() {
         public Iterable<String[]> call(Tuple2<String, String> file) throws Exception {
            // CSVReader reader = new CSVReader(new StringReader(file._2()));
-            return new CSVReader(new StringReader(file._2())).readAll();
+//          return reader.readAll();
+        	return new CSVReader(new StringReader(file._2())).readAll();
           }
         });
     
-    System.out.println("In Line Versuch");
+    System.out.println("Inline Versuch");
 //    System.out.print(Arrays.toString(keyedRDDinline[1]));
     System.out.print(Arrays.toString(keyedRDDinline.first()));
     System.out.print(keyedRDDinline.first()[1]);
