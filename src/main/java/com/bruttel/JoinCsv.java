@@ -29,16 +29,9 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SQLContext;
 
+
 public class JoinCsv {
 
-  public static class ParseLine implements PairFunction<String, Integer, String[]> {
-    public Tuple2<Integer, String[]> call(String line) throws Exception {
-      CSVReader reader = new CSVReader(new StringReader(line));
-      String[] elements = reader.readNext();
-      Integer key = Integer.parseInt(elements[3]);
-      return new Tuple2(key, elements);
-    }
-  }
 
   public static void main(String[] args) throws Exception {
 		if (args.length != 3) {
@@ -54,52 +47,79 @@ public class JoinCsv {
   public void run(String master, String csv1, String csv2) throws Exception {
 		JavaSparkContext sc = new JavaSparkContext(
       master, "joincsv", System.getenv("SPARK_HOME"), System.getenv("JARS"));
-		
-		SQLContext sqlContext = new org.apache.spark.sql.SQLContext(sc);
-    JavaRDD<String> csvFile1 = sc.textFile(csv1);
-    JavaRDD<String> csvFile2 = sc.textFile(csv2);
-    
-    //Original mit ParseLine
-    //JavaPairRDD<Integer, String[]> keyedRDD1 = csvFile1.mapToPair(new ParseLine());
-    //System.out.print(csvFile1.take(5));
-    
-    String header = csvFile1.first();
-    
-    List<StructField> fields = new ArrayList<StructField>();
-    for (String fieldName: header.split(";")) {
-      fields.add(DataTypes.createStructField(fieldName, DataTypes.IntegerType, true));
-    }
-    StructType schema = DataTypes.createStructType(fields);
+	
+  for (int i = 0; i < 50; i++) {
+      
+    //CSV Files einlesen
+    JavaPairRDD<String, String> csvData1 = sc.wholeTextFiles(csv1);
+    JavaPairRDD<String, String> csvData2 = sc.wholeTextFiles(csv2);
    
-    System.out.println(fields);
+    //CSV Files in Arrays pro Zeile
+   JavaRDD<String[]> csvArray1 = csvData1.flatMap(w ->  new CSVReader(new StringReader(w._2())).readAll());  
+    JavaRDD<String[]> csvArray2 = csvData2.flatMap(w ->  new CSVReader(new StringReader(w._2())).readAll());
     
-    JavaRDD<String> data = csvFile1.subtract(csvFile1.first());
+//    System.out.println("CSV csvData2.take(5): "+csvData2.take(5));
+//    System.out.println("csvData2.first()): "+csvData2.first());
+//    System.out.println("csvArray2.take(5): "+csvArray2.take(5));
+//    System.out.println("Arrays.toString(csvArray2.first()): "+Arrays.toString(csvArray2.first()));
+//    System.out.println("csvArray2.first()[0]: "+csvArray2.first()[0]);
     
+     //CSV Files mit Key aus Array für Join
+    JavaPairRDD<Integer, String[]> csvKeyed1 = csvArray1.mapToPair(A -> new Tuple2<Integer, String[]>(Integer.parseInt((A[0].split(";"))[3]), //Laufzeit
+    		A[0].split(";")));	//restliche Elemente
+    JavaPairRDD<Integer, String[]> csvKeyed2 = csvArray2.mapToPair(A -> new Tuple2<Integer, String[]>(Integer.parseInt((A[0].split(";"))[0]), //Laufzeit
+    		A[0].split(";")));  //restliche Elemente  
     
-    
-    
-    //ParseLine inline aufgerufen
-//    JavaPairRDD<Integer, String[]> keyedRDD1A = csvFile1.mapToPair(new PairFunction<String, Integer, String[]>() {
-//        public Tuple2<Integer, String[]> call(String line) throws Exception {
-//          CSVReader reader = new CSVReader(new StringReader(line));
-//          String[] elements = reader.readNext();
-////          Integer key = Integer.parseInt(elements[0]);
-//          return new Tuple2(Integer.parseInt(elements[0]), elements);
-//        }
-//      });
-//    ParseLine mit Lambda (Java 1.8)
-//    JavaRDD<String[]> keyedRDD1B_1 = csvFile1.flatMap(w ->  new CSVReader(new StringReader(w)).readAll());
-//    JavaPairRDD<Integer, String[]> keyedRDD1B_2 = keyedRDD1B_1.mapToPair(f -> new Tuple2(Integer.parseInt(f[3]), f));
-//    ParseLine mit Lambda (Java 1.8) in einem String
-//    JavaPairRDD<Integer, String[]> keyedRDD1B_3 = csvFile1.mapToPair(f -> new Tuple2(Integer.parseInt(new CSVReader(new StringReader(f)).readNext()[3]),  (new CSVReader(new StringReader(f))))); 
+//    System.out.println("csvKeyed1: "+csvKeyed1);
+//    System.out.println("csvKeyed1.first(): "+csvKeyed1.first());
+//    System.out.println("csvKeyed1.first()._1: "+csvKeyed1.first()._1);
+//    System.out.println("Arrays.toString(csvKeyed1.first()._2)): "+Arrays.toString(csvKeyed1.first()._2));
+//    System.out.println(csvKeyed1.first()[0]);
 
-    System.out.println("Inline Versuch");
+    //CSV Join beide CSV
+    JavaPairRDD<Integer, Tuple2<String[], String[]>> csvJoined = csvKeyed1.join(csvKeyed2);
+    
+    System.out.println(csvJoined.first()._2()._1[1]);
+    
+    //CSV Daten verarbeiten
+    JavaPairRDD<String, Double> csvCalculated = csvJoined.mapToPair(A -> new Tuple2<String, Double>(A._2()._1[1],  //PortfolioName
+    		Double.parseDouble(A._2()._1[2]) //Nennwert
+    		* Math.pow(Double.parseDouble(A._2()._1[3]) // Laufzeit
+    				, Double.parseDouble(A._2()._2[1]))  //Zinswert  				
+    				));    
+    
+     
+    JavaPairRDD<String, Double> csvCounts = csvCalculated.reduceByKey((x, y) -> x + y); 
+    
+    
+  System.out.println("Durchlauf "+i+": csvCounts.take(4) -> "+csvCounts.take(4));
+    
+  }
+    //    System.out.print(result.take(5));
+//    System.out.print(result.first());
+//    
+//    String header = csvFile1.first();
+//    
+//    List<StructField> fields = new ArrayList<StructField>();
+//    for (String fieldName: header.split(";")) {
+//      fields.add(DataTypes.createStructField(fieldName, DataTypes.IntegerType, true));
+//    }
+//    StructType schema = DataTypes.createStructType(fields);
+//   
+//    System.out.println(fields);
+//    
+//    JavaRDD<String> data = csvFile1.subtract(csvFile1.first());
+    
+    
+    
+//    System.out.println("Inline Versuch");
 //  System.out.print(Arrays.toString(keyedRDDinline[1]));
 //    System.out.print((keyedRDD1.first()));
 //    System.out.print((keyedRDD1A.first()));
 //    System.out.print(keyedRDD1B_2.first());
 //    System.out.print(keyedRDD1B_3.first());
     
+
     
 //    JavaPairRDD<Integer, String[]> keyedRDD2 = csvFile1.mapToPair(new ParseLine());
 //    JavaPairRDD<Integer, Tuple2<String[], String[]>> result = keyedRDD1.join(keyedRDD2);
