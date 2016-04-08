@@ -77,5 +77,6 @@ public class JoinCsv {
   System.out.println("Durchlauf "+i+": csvCounts.take(4) -> "+csvCounts.take(4));
     
   }
+  sc.close();
  }
 }
