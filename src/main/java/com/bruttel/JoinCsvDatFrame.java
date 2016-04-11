@@ -11,6 +11,8 @@ import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 
+import scala.Tuple2;
+
 
 public class JoinCsvDatFrame {
 
@@ -48,6 +50,8 @@ public class JoinCsvDatFrame {
 		    .option("header", "true")
 		    .schema(schemaPortfolio) //Schema is already created
 		    .load(csv1);
+	//Register as table to use sql later on
+	dfPortfolio.registerTempTable("portfolio");
 	
 	//Create SChema for Zins
 	StructType schemaZins = new StructType()
@@ -60,18 +64,21 @@ public class JoinCsvDatFrame {
 		    .option("header", "true")
 		    .schema(schemaZins)
 		    .load(csv2);
+	//Register as table to use sql later on
+	dfZins.registerTempTable("zins");
+	
+	
 //Manual Debug Help
 	//Print 20 frist Rows of Data Frame
-	dfPortfolio.show();
-	dfZins.show();
+//	dfPortfolio.show();
+//	dfZins.show();
 
 	// Print the schema in a tree format
-	dfPortfolio.printSchema();
-	dfZins.printSchema();
+//	dfPortfolio.printSchema();
+//	dfZins.printSchema();
 
 	// Select only the "name" column
-	dfPortfolio.select("Portfolio").show();
-
+//	dfPortfolio.select("Portfolio").show();
 
 	// Select everybody, but increment the age by 1
 	//df.select(df.col("name"), df.col("age").plus(1)).show();
@@ -79,10 +86,48 @@ public class JoinCsvDatFrame {
 	// Select people older than 21
 	//df.filter(df.col("age").gt(21)).show();
 
-
 	// Count people by age
 	//df.groupBy("age").count().show();
 	
+//	//Create Schema for Result
+//	StructType schemaResult = new StructType()
+//				.add("Portfolio", DataTypes.DoubleType, true)
+//				.add("Nennwert", DataTypes.DoubleType, true);
+//	//Create Portfolio Data Frame 	
+//	DataFrame dfResult = sqlContext.read()
+//			    .format("com.databricks.spark.csv")
+//			    .option("inferSchema", "false") //Does not work properly with CSV 
+//			    .option("header", "true")
+//			    .schema(schemaPortfolio) //Schema is already created
+//			    .load();
+	
+	
+	// Join der beiden Dataframes 
+	dfPortfolio.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer");
+	
+//	dfResult = 	dfPortfolio
+//				.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer") // Join der beiden Dataframes 
+//				.groupBy(dfPortfolio.col("Laufzeit"), "") //Gruppieren (doku?)
+//				.agg(sum(dfPortfolio.col("Nennwert") * dfPortfolio.col("Zins")^ dfPortfolio.col("Laufzeit")); //Aggregieren -> (Doku?)
+				
+	DataFrame dfResult = 	dfPortfolio
+				//.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer") // Join der beiden Dataframes 
+//				.groupBy(dfPortfolio.col("Laufzeit"), "Laufzeit")
+//				.agg(sum(dfPortfolio.col("Nennwert").multiply(dfPortfolio.col("Zins").power(dfPortfolio.col("Zins"));
+//				
+				.sqlContext().sql("SELECT portfolio.Portfolio, SUM(Nennwert * POW (zins.Zins, zins.Laufzeit)) as Istwert "
+								+ "FROM portfolio JOIN zins ON (portfolio.Laufzeit = zins.Laufzeit) "
+								+ "GROUP BY portfolio.Portfolio");
+	
 
+				
+//				 csvJoined.mapToPair(A -> new Tuple2<String, Double>(A._2()._1[1], 
+//				.execute();
+	
+	dfResult.printSchema();
+	dfResult.show();
+	
+	sc.close();
+    
 	}
 }
