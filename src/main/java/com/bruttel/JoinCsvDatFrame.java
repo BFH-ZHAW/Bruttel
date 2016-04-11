@@ -11,8 +11,6 @@ import org.apache.spark.sql.types.StructType;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.SQLContext;
 
-import scala.Tuple2;
-
 
 public class JoinCsvDatFrame {
 
@@ -89,37 +87,18 @@ public class JoinCsvDatFrame {
 	// Count people by age
 	//df.groupBy("age").count().show();
 	
-//	//Create Schema for Result
-//	StructType schemaResult = new StructType()
-//				.add("Portfolio", DataTypes.DoubleType, true)
-//				.add("Nennwert", DataTypes.DoubleType, true);
-//	//Create Portfolio Data Frame 	
-//	DataFrame dfResult = sqlContext.read()
-//			    .format("com.databricks.spark.csv")
-//			    .option("inferSchema", "false") //Does not work properly with CSV 
-//			    .option("header", "true")
-//			    .schema(schemaPortfolio) //Schema is already created
-//			    .load();
-	
-	
-	// Join der beiden Dataframes 
-	dfPortfolio.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer");
-	
-//	dfResult = 	dfPortfolio
+	// Verarbeitung der beiden Tabellen
+
+//	dfResult = 	dfPortfolio  //Hätte ich noch schön gefunden so... 
 //				.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer") // Join der beiden Dataframes 
 //				.groupBy(dfPortfolio.col("Laufzeit"), "") //Gruppieren (doku?)
-//				.agg(sum(dfPortfolio.col("Nennwert") * dfPortfolio.col("Zins")^ dfPortfolio.col("Laufzeit")); //Aggregieren -> (Doku?)
-				
-	DataFrame dfResult = 	dfPortfolio
-				//.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer") // Join der beiden Dataframes 
-//				.groupBy(dfPortfolio.col("Laufzeit"), "Laufzeit")
-//				.agg(sum(dfPortfolio.col("Nennwert").multiply(dfPortfolio.col("Zins").power(dfPortfolio.col("Zins"));
-//				
-				.sqlContext().sql("SELECT portfolio.Portfolio, SUM(Nennwert * POW (zins.Zins, zins.Laufzeit)) as Istwert "
-								+ "FROM portfolio JOIN zins ON (portfolio.Laufzeit = zins.Laufzeit) "
-								+ "GROUP BY portfolio.Portfolio");
+//				.agg(sum(dfPortfolio.col("Nennwert") * dfPortfolio.col("Zins")^ dfPortfolio.col("Laufzeit")); //Aggregieren -> (Doku? und Hochrechnen?!?!)
 	
-
+	// Gleich wie oben, aber diesmal "nur" mit SQL 			
+	DataFrame dfResult = 	dfPortfolio
+							.sqlContext().sql("SELECT portfolio.Portfolio, SUM(Nennwert * POW (zins.Zins, zins.Laufzeit)) as Istwert "
+											+ "FROM portfolio JOIN zins ON (portfolio.Laufzeit = zins.Laufzeit) "
+											+ "GROUP BY portfolio.Portfolio");
 				
 //				 csvJoined.mapToPair(A -> new Tuple2<String, Double>(A._2()._1[1], 
 //				.execute();
