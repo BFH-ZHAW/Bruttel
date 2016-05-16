@@ -1,8 +1,10 @@
+
 /**
- * Illustrates joining two csv files
+ * Illustrates ...
  */
 package com.bruttel;
 
+import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 //Import factory methods provided by DataTypes.
 import org.apache.spark.sql.types.DataTypes;
@@ -28,11 +30,21 @@ public class DataFrameCSVKomplett {
   public void run(String master, String csv1) throws Exception {
 		
 	//Create Spark Context 
-	JavaSparkContext sc = new JavaSparkContext(
-      master, "joincsv", System.getenv("SPARK_HOME"), System.getenv("JARS"));
+	SparkConf sparkConf = new SparkConf().setAppName("DataFrameCSVKompl")
+										 //.setSparkHome(System.getenv("SPARK_HOME"))
+										 //.setJars(System.getenv("JARS"));
+										;
+	//Master setzten, falls es Lokal ist
+	if(master=="local"){ sparkConf  = sparkConf.setMaster("spark://localhost:18080");}
+
+    JavaSparkContext sc = new JavaSparkContext(sparkConf);
 		
 	//Create SQL Spark Context
 	SQLContext sqlContext = new SQLContext(sc);	
+
+	
+	//Beginn der Zeitmessung:
+ 	   long startTime = System.currentTimeMillis();
 	  
 	//Create Schema for Portfolio
 	StructType schemaPortfolio = new StructType()
@@ -92,7 +104,12 @@ public class DataFrameCSVKomplett {
 	dfResult.printSchema();
 	dfResult.show();
 	
+	//Ende der Zeitmessung:
+	long endTime = System.currentTimeMillis();		
+	
 	sc.close();
+	
+	System.out.println("Dauer: "+((endTime-startTime)/1000)+" sec");
     
 	}
 }
