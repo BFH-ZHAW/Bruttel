@@ -10,42 +10,34 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.types.DataTypes;
 //Import StructType and StructField
 import org.apache.spark.sql.types.StructType;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.SQLContext;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 
+//import org.apache.spark.sql.SQLContext;
+import java.util.Iterator;
 
 public class DataFrameCSVKomplett {
 
 
   public static void main(String[] args) throws Exception {
-		if (args.length != 2) {
+		if (args.length != 3) {
       throw new Exception("Usage BasicJoinCsv sparkMaster csv1");
 		}
-    String master = args[0];
-    String csv1 = args[1];
+    String csv1 = args[0];
+    String activity = args[2];
     DataFrameCSVKomplett jsv = new DataFrameCSVKomplett();
-    jsv.run(master, csv1);
+    jsv.run(csv1, activity);
   }
 
-  public void run(String master, String csv1) throws Exception {
+  public void run(String csv1, String activity) throws Exception {
 		
-	//Create Spark Context 
-	SparkConf sparkConf = new SparkConf().setAppName("DataFrameCSVKompl")
-										 //.setSparkHome(System.getenv("SPARK_HOME"))
-										 //.setJars(System.getenv("JARS"));
-										;
-	//Master setzten, falls es Lokal ist
-	if(master=="local"){ sparkConf  = sparkConf.setMaster("spark://localhost:18080");}
-
-    JavaSparkContext sc = new JavaSparkContext(sparkConf);
-		
-	//Create SQL Spark Context
-	SQLContext sqlContext = new SQLContext(sc);	
-
-	
-	//Beginn der Zeitmessung:
- 	   long startTime = System.currentTimeMillis();
-	  
+	//Create Spark Context
+	SparkSession sparkSession = SparkSession
+	   		.builder()
+	   		.appName("sparkjobs.MapContractsToEventsJob")
+	   		.getOrCreate();  
+  
 	//Create Schema for Portfolio
 	StructType schemaPortfolio = new StructType()
 			.add("Nr", DataTypes.IntegerType, true)
@@ -54,62 +46,43 @@ public class DataFrameCSVKomplett {
 			.add("Laufzeit", DataTypes.DoubleType, true)
 			.add("Zins", DataTypes.DoubleType, true);
 		
-	//Create Portfolio Data Frame 	
-	DataFrame dfPortfolio = sqlContext.read()
-		    .format("com.databricks.spark.csv")
-		    .option("inferSchema", "false") //Does not work properly with CSV 
-		    .option("header", "true")
-		    .schema(schemaPortfolio) //Schema is already created
-		    .load(csv1);
+	//Create Portfolio Data Frame from CSV	
+	Dataset<Row> dsPortfolio = sparkSession.read()
+		    .option("sep", ";")
+		    .schema(schemaPortfolio)
+		    .csv(csv1)    // Equivalent to format("csv").load("/path/to/directory")
+		    .cache();
+	
 	//Register as table to use sql later on
-	dfPortfolio.registerTempTable("portfolio");
+	dsPortfolio.createOrReplaceTempView("portfolio");
+
+	//SQL abhängig von Activity:
+	String sqlquery; 
+	if (activity.equals("count")){
+		sqlquery = "SELECT count(*) "
+				+ "FROM portfolio ";
+	}
+	else {
+		sqlquery = "SELECT Portfolio, SUM(Nennwert * POW (Zins, Laufzeit)) as Istwert "
+				+ "FROM portfolio "
+				+ "GROUP BY Portfolio";
+	}
+	
+	//Hier werden die Performance Queries erstellt:
+    for(int i=1; i<11; i++){
+    	//Start der Zeitmessung
+    	long startTime = System.currentTimeMillis();	
+    	
+    	//SQL Query ausführen
+    	dsPortfolio.sqlContext().sql(sqlquery);
+    	
+    	//Ende der Zeitmessung:
+    	long endTime = System.currentTimeMillis();	
+    	//Log Ausgabe
+    	System.out.println("Dauer Durchgang "+i+": "+((endTime-startTime)/1000)+" sec");
+    }
 		
-//Manual Debug Help
-	//Print 20 frist Rows of Data Frame
-//	dfPortfolio.show();
-//	dfZins.show();
-
-	// Print the schema in a tree format
-//	dfPortfolio.printSchema();
-//	dfZins.printSchema();
-
-	// Select only the "name" column
-//	dfPortfolio.select("Portfolio").show();
-
-	// Select everybody, but increment the age by 1
-	//df.select(df.col("name"), df.col("age").plus(1)).show();
-
-	// Select people older than 21
-	//df.filter(df.col("age").gt(21)).show();
-
-	// Count people by age
-	//df.groupBy("age").count().show();
-	
-	// Verarbeitung der beiden Tabellen
-
-//	dfResult = 	dfPortfolio  //HÃ¤tte ich noch schÃ¶n gefunden so... 
-//				.join(dfZins, dfZins.col("Laufzeit").equalTo(dfPortfolio.col("Laufzeit")), "left_outer") // Join der beiden Dataframes 
-//				.groupBy(dfPortfolio.col("Laufzeit"), "") //Gruppieren (doku?)
-//				.agg(sum(dfPortfolio.col("Nennwert") * dfPortfolio.col("Zins")^ dfPortfolio.col("Laufzeit")); //Aggregieren -> (Doku? und Hochrechnen?!?!)
-	
-	// Gleich wie oben, aber diesmal "nur" mit SQL 			
-	DataFrame dfResult = 	dfPortfolio
-							.sqlContext().sql("SELECT Portfolio, SUM(Nennwert * POW (Zins, Laufzeit)) as Istwert "
-											+ "FROM portfolio "
-											+ "GROUP BY Portfolio");
-				
-//				 csvJoined.mapToPair(A -> new Tuple2<String, Double>(A._2()._1[1], 
-//				.execute();
-	
-	dfResult.printSchema();
-	dfResult.show();
-	
-	//Ende der Zeitmessung:
-	long endTime = System.currentTimeMillis();		
-	
-	sc.close();
-	
-	System.out.println("Dauer: "+((endTime-startTime)/1000)+" sec");
+	SparkSession.clearActiveSession();
     
 	}
 }
